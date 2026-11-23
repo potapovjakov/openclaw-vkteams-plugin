@@ -35,33 +35,41 @@ openclaw plugins install ~/dev/openclaw-vkteams-plugin
 Если исходный код находится в другом каталоге, укажите путь к нему вместо
 `~/dev/openclaw-vkteams-plugin`.
 
-## Настройка токена
+## Настройка канала и токена
 
-```bash
-mkdir -p ~/.openclaw/workspace/secrets
-chmod 700 ~/.openclaw/workspace/secrets
-$EDITOR ~/.openclaw/workspace/secrets/vkteams-token.txt
-chmod 600 ~/.openclaw/workspace/secrets/vkteams-token.txt
-```
+Выберите один способ настройки токена VK Teams Bot API: ввод в мастере,
+отдельный файл или переменная окружения.
 
-Файл должен содержать только токен VK Teams Bot API. Также поддерживаются
-переменная окружения `VKTEAMS_BOT_TOKEN`, прямое указание токена в конфигурации
-и ссылка на файл с токеном.
-
-## Настройка канала
-
-Запустите интерактивный мастер:
+### Ввод токена в мастере
 
 ```bash
 openclaw channels add
 ```
 
-Выберите `VK Teams` и аккаунт `default`. Если мастер предлагает выбрать файл
-токена, укажите:
+Выберите `VK Teams` и аккаунт `default`, затем вставьте токен по запросу.
+Мастер сохранит его в конфигурации канала как `botToken`. **Создавать файл
+с токеном в этом случае не нужно.**
 
-```text
-~/.openclaw/workspace/secrets/vkteams-token.txt
+### Отдельный файл (необязательно)
+
+Если не хотите хранить токен в конфигурации OpenClaw, сохраните его в отдельном
+файле и укажите путь к нему в `channels.vkteams.tokenFile`. Например:
+
+```bash
+mkdir -p "$HOME/.openclaw/workspace/secrets"
+chmod 700 "$HOME/.openclaw/workspace/secrets"
+${EDITOR:-vi} "$HOME/.openclaw/workspace/secrets/vkteams-token.txt"
+chmod 600 "$HOME/.openclaw/workspace/secrets/vkteams-token.txt"
 ```
+
+Файл должен содержать только токен. Путь выше — пример: плагин не создаёт
+файл и не ищет его автоматически. При переходе на `tokenFile` удалите
+`botToken` из настроек того же аккаунта: он имеет приоритет над файлом.
+
+### Переменная окружения (необязательно)
+
+Для аккаунта `default` можно задать `VKTEAMS_BOT_TOKEN` в окружении процесса
+Gateway. Плагин использует её, если токен не задан в конфигурации или файле.
 
 API URL по умолчанию — `https://api.armgs.team/bot/v1`. Его можно изменить
 параметром `apiBaseUrl`.
