@@ -1,0 +1,91 @@
+name: Publish to ClawHub
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clawhub-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Verify release source
+        run: |
+          set -euo pipefail
+          pnpm check:version
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            git merge-base --is-ancestor HEAD origin/main || {
+              echo 'The release tag must point to a commit on main.'
+              exit 1
+            }
+          fi
+
+      - name: Test and build
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm check
+          pnpm test
+          pnpm build
+          git diff --exit-code -- dist
+
+      - name: Validate and pack
+        id: pack
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/clawhub-cli" --ignore-scripts --no-audit --no-fund clawhub@0.27.0
+          "$RUNNER_TEMP/clawhub-cli/node_modules/.bin/clawhub" package validate . --out "$RUNNER_TEMP/clawhub-inspector"
+          archive=$(npm pack --ignore-scripts --silent --pack-destination "$RUNNER_TEMP")
+          echo "archive=$RUNNER_TEMP/$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Preview or publish
+        env:
+          ARCHIVE: ${{ steps.pack.outputs.archive }}
+          CLAWHUB_TOKEN: ${{ github.event_name == 'push' && secrets.CLAWHUB_TOKEN || '' }}
+        run: |
+          set -euo pipefail
+          cli="$RUNNER_TEMP/clawhub-cli/node_modules/.bin/clawhub"
+          version=$(node -p 'require("./package.json").version')
+          tags=latest
+          if [[ "$version" == *-beta.* ]]; then tags=beta; fi
+          args=(package publish "$ARCHIVE" --family code-plugin --tags "$tags"
+            --source-repo "$GITHUB_REPOSITORY" --source-commit "$(git rev-parse HEAD)"
+            --source-ref "$GITHUB_REF_NAME")
+
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            "$cli" "${args[@]}" --dry-run
+            exit 0
+          fi
+
+          if [[ -z "$CLAWHUB_TOKEN" ]]; then
+            echo 'Configure the CLAWHUB_TOKEN Actions secret before pushing a release tag.'
+            exit 1
+          fi
+
+          export CLAWHUB_CONFIG_PATH
+          CLAWHUB_CONFIG_PATH=$(mktemp "$RUNNER_TEMP/clawhub-config.XXXXXX")
+          trap 'rm -f -- "$CLAWHUB_CONFIG_PATH"' EXIT
+          node -e 'const {CLAWHUB_CONFIG_PATH, CLAWHUB_TOKEN} = process.env; require("node:fs").writeFileSync(CLAWHUB_CONFIG_PATH, JSON.stringify({registry: "https://clawhub.ai", token: CLAWHUB_TOKEN}));'
+          unset CLAWHUB_TOKEN
+          "$cli" "${args[@]}" --wait
