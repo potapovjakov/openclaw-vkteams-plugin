@@ -1,98 +1,40 @@
-# Releasing
+# Выпуск версий
 
-This repository uses Changesets for versioning, changelog updates, npm
-publishing, and GitHub release notes.
+Репозиторий использует Changesets для управления версиями, changelog, публикацией
+npm-пакета и GitHub Release.
 
-## Normal Contributor Flow
+## Обычная работа
 
-For a normal feature or fix PR:
-
-1. Make your changes
-2. Run local checks
+1. Внесите изменения.
+2. Запустите проверки:
 
 ```bash
-pnpm check
-pnpm test
+npm run check
+npm test
+npm run build
 ```
 
-3. If the change is user-visible, add a changeset
+3. Для пользовательского изменения добавьте changeset:
 
 ```bash
-pnpm changeset
+npx changeset
 ```
 
-4. Commit and open a PR
+4. Создайте commit и pull request.
 
-The PR CI checks:
+## После слияния
 
-- typecheck
-- tests
-- version schema
-- changeset presence for user-facing changes
+После слияния pull request с changeset в `main` release workflow создаёт или
+обновляет release pull request. После его слияния workflow обновляет версию,
+публикует пакет в npm и создаёт GitHub Release.
 
-## After Merge
+## Формат версии
 
-When a PR with one or more changesets is merged to `main`:
+- стабильная версия: `YYYY.M.K`;
+- beta-версия: `YYYY.M.K-beta.N`.
 
-1. The release workflow runs
-2. Changesets opens or updates a release PR
-3. That release PR updates:
-   - `package.json` version
-   - `CHANGELOG.md`
+Если теги создаются вручную, используйте `vYYYY.M.K` или `vYYYY.M.K-beta.N`.
 
-## Publishing a Release
+## Секреты
 
-To publish a release:
-
-1. Review the release PR
-2. Merge the release PR
-3. The release workflow runs again on `main`
-4. The package is published to npm
-5. A GitHub Release is created
-
-## Who Assigns the Release Tag?
-
-In the current setup, releases are not triggered by manually creating a Git tag.
-
-The source of truth is the merged Changesets release PR. The automation derives
-the release version from that PR and handles the release process.
-
-So, in practice:
-
-- contributors add changesets
-- a maintainer reviews and merges the release PR
-- automation handles the publish/release step
-
-If you later switch to a tag-driven workflow, then a maintainer would be the one
-to create and push the release tag.
-
-## Version Format
-
-Package versions must use:
-
-- `YYYY.M.K`
-- `YYYY.M.K-beta.N`
-
-Examples:
-
-- `2026.3.1`
-- `2026.3.2-beta.1`
-
-If tags are used manually in the future, they should use:
-
-- `vYYYY.M.K`
-- `vYYYY.M.K-beta.N`
-
-Examples:
-
-- `v2026.3.1`
-- `v2026.3.2-beta.1`
-
-## Required Secrets
-
-GitHub Actions publishing requires:
-
-- `NPM_TOKEN`
-
-Without it, the release workflow can still prepare the version PR, but npm
-publish will fail.
+Для публикации через GitHub Actions требуется секрет `NPM_TOKEN`.

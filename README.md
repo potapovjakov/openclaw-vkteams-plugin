@@ -1,153 +1,153 @@
-# OpenClaw VK Teams plugin
+# Плагин OpenClaw для VK Teams
 
-Community VK Teams channel plugin for OpenClaw.
+Плагин канала VK Teams для OpenClaw. Использует VK Teams Bot API и long polling.
 
-## Install
+## Возможности
 
-From npm:
+- личные сообщения через VK Teams Bot API;
+- long polling через `/events/get`;
+- отправка текстовых ответов через `/messages/sendText`;
+- pairing OpenClaw;
+- списки разрешённых пользователей и политики доступа к личным сообщениям;
+- восстановление polling после временных ошибок сети.
+
+Ограничения текущей версии: поддерживаются только личные сообщения, текстовые
+сообщения и ответы. Сообщения из групповых чатов игнорируются.
+
+## Установка
+
+### Из npm
 
 ```bash
 openclaw onboard --install-daemon
 openclaw plugins install openclaw-vkteams-plugin
 ```
 
-From a local checkout:
+### Из локального checkout
 
 ```bash
 openclaw onboard --install-daemon
-openclaw plugins install /home/potapovjakov/dev/openclaw-vkteams-plugin
+openclaw plugins install ~/dev/openclaw-vkteams-plugin
 ```
 
-## Configure
+Если исходный код находится в другом каталоге, укажите путь к нему вместо
+`~/dev/openclaw-vkteams-plugin`.
 
-After installing the plugin, create a token file:
+## Настройка токена
 
 ```bash
-mkdir -p ~/.openclaw/workspace/secrets/
+mkdir -p ~/.openclaw/workspace/secrets
+chmod 700 ~/.openclaw/workspace/secrets
 $EDITOR ~/.openclaw/workspace/secrets/vkteams-token.txt
+chmod 600 ~/.openclaw/workspace/secrets/vkteams-token.txt
 ```
 
-The file should contain only the VK Teams token.
+Файл должен содержать только токен VK Teams Bot API. Также поддерживаются
+переменная окружения `VKTEAMS_BOT_TOKEN`, прямое указание токена в конфигурации
+и ссылка на файл с токеном.
 
-Then add the VK Teams channel using that token file:
+## Настройка канала
+
+Запустите интерактивный мастер:
 
 ```bash
-openclaw channels add --channel vkteams --token-file ~/.openclaw/workspace/secrets/vkteams-token.txt
+openclaw channels add
 ```
 
-The setup flow supports a VK Teams token from:
+Выберите `VK Teams` и аккаунт `default`. Если мастер предлагает выбрать файл
+токена, укажите:
 
-- an environment variable such as `VKTEAMS_BOT_TOKEN`
-- direct config input
-- a token file reference
-
-If you want to compare against the interactive flow first, you can also run:
-
-```bash
-openclaw channels add --channel vkteams
+```text
+~/.openclaw/workspace/secrets/vkteams-token.txt
 ```
 
-## Verify
+API URL по умолчанию — `https://api.armgs.team/bot/v1`. Его можно изменить
+параметром `apiBaseUrl`.
 
-Check channel status:
+## Проверка и pairing
 
 ```bash
 openclaw channels status
+openclaw channels status --probe
+openclaw channels capabilities --channel vkteams
 ```
 
-Expected outcome:
-
-- `vkteams` is listed
-- the channel does not report missing token configuration
-- no plugin id mismatch warning is shown for `vkteams`
-
-Then send a message to your bot in VK Teams. The bot should respond with a pairing code.
-
-Approve that pairing request:
+Напишите боту личное сообщение в VK Teams. Бот отправит pairing-код. Одобрите
+пользователя:
 
 ```bash
-openclaw pairing approve vkteams APPROVALCODE
+openclaw pairing approve vkteams КОД
 ```
 
-Expected outcome:
+Затем отправьте боту новое сообщение.
 
-- the pairing request is approved without CLI errors
-- the VK user receives the approval notification
-- subsequent inbound messages from that user are accepted
+## Запуск Gateway
 
-## What it supports
+```bash
+openclaw onboard --install-daemon
+openclaw gateway start
+openclaw gateway status
+```
 
-- VK Teams direct messages through the VK Teams Bot API long polling endpoint
-- direct-message allowlists and pairing
-- outbound text replies
+Для диагностики в foreground:
 
-Current scope boundary:
+```bash
+openclaw gateway run --force
+```
 
-- direct messages only
-- no VK Teams-chat inbound handling
-
-## Local development
+## Локальная разработка
 
 ```bash
 npm install
 npm test
 npm run check
+npm run build
 ```
 
-To test against a local OpenClaw checkout:
+После сборки:
 
 ```bash
-mkdir -p ~/.openclaw/workspace/secrets/
-openclaw plugins install /home/potapovjakov/dev/openclaw-vkteams-plugin
-openclaw channels add --channel vkteams --token-file ~/.openclaw/workspace/secrets/vkteams-token.txt
-openclaw gateway run --force
+openclaw plugins install ~/dev/openclaw-vkteams-plugin --force
 ```
 
-## Publish
+## Обновление на сервере
 
-This package is intended to be published to npm so it can be installed with:
+```bash
+cd ~/dev/openclaw-vkteams-plugin
+git pull --ff-only
+npm install --omit=dev --ignore-scripts --no-audit --no-fund
+npm run build
+openclaw plugins install ~/dev/openclaw-vkteams-plugin --force
+openclaw gateway restart
+```
+
+Если `gateway restart` недоступна:
+
+```bash
+openclaw gateway stop
+openclaw gateway start
+```
+
+## Диагностика
+
+```bash
+openclaw plugins list
+openclaw channels status --probe
+openclaw gateway status
+openclaw logs
+```
+
+Не публикуйте токен, содержимое файла секретов и вывод команд, в котором они
+могут присутствовать.
+
+## Публикация
 
 ```bash
 openclaw plugins install openclaw-vkteams-plugin
 ```
 
-## Versioning
+Версии используют формат `YYYY.M.K` или `YYYY.M.K-beta.N`.
 
-This plugin uses calendar-style versions:
-
-- stable: `YYYY.M.K`
-- beta: `YYYY.M.K-beta.N`
-
-Examples:
-
-- `2026.3.1`
-- `2026.3.2-beta.1`
-
-Release tags should use:
-
-- `vYYYY.M.K`
-- `vYYYY.M.K-beta.N`
-
-## Changelog and Releases
-
-This repo uses Changesets for changelog entries and release notes.
-
-For user-visible changes:
-
-```bash
-pnpm changeset
-```
-
-When preparing a release locally:
-
-```bash
-pnpm version-packages
-```
-
-That updates package versions and `CHANGELOG.md`.
-
-Publishing is handled by the GitHub release workflow after merge to `main`.
-
-After publish, submit it for listing on the OpenClaw community plugins page:
+Документация OpenClaw по публикации community-плагинов:
 
 https://docs.openclaw.ai/plugins/community

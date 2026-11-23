@@ -1,25 +1,25 @@
-# Changelog
+# История изменений
 
 ## 2026.1.1
 
 ### Patch Changes
 
-- bdcaa43: fix: update plugin metadata and installation instructions for VK channel
+- bdcaa43: исправлены метаданные плагина и инструкции установки канала VK Teams
 
 ## 2026.1.0
 
 ### Minor Changes
 
-- 86ec0a4: feat: add the first iteration of the VK bots plugin
+- 86ec0a4: добавлена первая версия плагина VK Teams
 
 ### Patch Changes
 
-- a90521e: Fix packange naming
+- a90521e: исправлено имя пакета
 
-All notable changes to this project will be documented in this file.
+Все существенные изменения проекта документируются в этом файле.
 
-This project uses Changesets for release notes and version updates.
+Проект использует Changesets для release notes и обновления версий.
 
 ## Unreleased
 
-- Initial standalone community plugin setup for VK Bots.
+- Начальная настройка standalone community-плагина VK Teams.

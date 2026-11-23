@@ -1,183 +1,78 @@
-# Contributing to openclaw-vkbots-plugin
+# Участие в разработке
 
-Thanks for contributing.
+Спасибо за вклад в проект. Репозиторий содержит community-плагин канала VK Teams
+для OpenClaw.
 
-This repository contains a community VK Bots channel plugin for OpenClaw. It is
-smaller in scope than the main OpenClaw monorepo, so the contribution process
-is intentionally simpler.
+## Перед началом работы
 
-## Before You Start
+- прочитайте README;
+- небольшие исправления отправляйте pull request;
+- крупные изменения сначала обсудите в issue или discussion.
 
-- Read the plugin README first.
-- For bug fixes and small improvements, open a PR directly.
-- For larger feature changes or architecture changes, open an issue or start a
-  discussion first so the direction is clear.
+## Среда разработки
 
-## Development Setup
-
-Requirements:
-
-- Node.js 22+
-- pnpm
-
-Install dependencies:
+Требуются Node.js, совместимый с установленной версией OpenClaw, и npm.
 
 ```bash
-pnpm install
+npm install
 ```
 
-## Local Checks
+## Проверки
 
-Run these before opening or updating a PR:
+Перед pull request выполните:
 
 ```bash
-pnpm check
-pnpm test
+npm run check
+npm test
+npm run build
 ```
 
-What they do:
-
-- `pnpm check` runs TypeScript typechecking (`tsc --noEmit`)
-- `pnpm test` runs the plugin’s Vitest suite
-
-If you changed plugin loading, setup, or runtime behavior, also verify the real
-OpenClaw install flow locally:
+Для изменений setup или runtime дополнительно проверьте загрузку плагина:
 
 ```bash
-openclaw plugins install /path/to/openclaw-vkbots-plugin
-openclaw channels add --channel vk
+openclaw plugins install ~/dev/openclaw-vkteams-plugin --force
+openclaw channels capabilities --channel vkteams
 openclaw gateway run --force
 ```
 
-Then test a real VK direct-message roundtrip if you have credentials available.
+## Правила изменений
 
-## Scope Guidelines
+Допустимы исправления канала VK Teams, улучшения setup и конфигурации,
+документации, тестов и процесса выпуска. Не смешивайте несвязанные изменения в
+одном pull request.
 
-Keep PRs focused.
+## Стиль кода
 
-Good PRs for this repo:
+- TypeScript со строгой типизацией;
+- без `any`, если это возможно;
+- только публичные поверхности `openclaw/plugin-sdk/*`;
+- без импортов внутренних путей OpenClaw `src/**`.
 
-- VK channel bug fixes
-- setup/config improvements
-- docs improvements for this plugin
-- tests for plugin behavior
-- release/process improvements for this plugin repo
+## Pull request
 
-Avoid mixing unrelated changes in one PR.
+Укажите, что изменено, зачем, как выполнялась проверка, а также известные
+ограничения. Если использовался ИИ, сообщите об этом явно.
 
-## Code Style
+## Коммиты
 
-- Use TypeScript
-- Prefer strict typing
-- Avoid `any`
-- Keep imports on public OpenClaw plugin SDK surfaces (`openclaw/plugin-sdk/*`)
-- Do not depend on OpenClaw internal `src/**` paths from this repo
-- Use American English in code, comments, and docs
-
-## Testing Expectations
-
-At minimum:
-
-- Add or update tests when behavior changes
-- Keep `pnpm check` and `pnpm test` passing
-
-For setup/runtime changes, manual verification is strongly recommended:
-
-- plugin installs from a local path
-- plugin loads successfully in OpenClaw
-- `openclaw channels add --channel vk` works
-- gateway starts
-- VK direct messages still roundtrip
-
-## Pull Requests
-
-Please include:
-
-- what changed
-- why it changed
-- how you tested it
-- any scope boundaries or known follow-ups
-
-If the PR was AI-assisted, say so clearly in the PR description.
-
-## Commit Messages
-
-Use concise conventional commit messages:
+Используйте короткие conventional commit-сообщения:
 
 ```text
 type(scope): summary
 ```
 
-Examples:
+Допустимые типы: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 
-- `feat(vk): add long poll reconnect guard`
-- `fix(setup): handle secret input correctly`
-- `docs(readme): clarify local install flow`
+## Выпуски
 
-Rules:
-
-- allowed types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`
-- use lowercase
-- add a short scope when possible
-- keep the summary imperative and concise
-- do not end the subject with a period
-
-This repo enforces the policy with a local Git `commit-msg` hook.
-
-## Releases
-
-This plugin is intended to be released independently from the main OpenClaw
-repo.
-
-Versioning policy:
-
-- stable releases use `YYYY.M.K`
-- beta releases use `YYYY.M.K-beta.N`
-
-Examples:
-
-- `2026.3.1`
-- `2026.3.2`
-- `2026.3.3-beta.1`
-- `2026.3.3-beta.2`
-
-Release tags must use:
-
-- `vYYYY.M.K`
-- `vYYYY.M.K-beta.N`
-
-This repo uses Changesets for release notes and changelog management.
-
-For user-visible changes, add a changeset:
+Стабильные версии используют формат `YYYY.M.K`, beta-версии —
+`YYYY.M.K-beta.N`. Для пользовательских изменений добавляйте changeset:
 
 ```bash
-pnpm changeset
+npx changeset
 ```
 
-When a release is prepared, Changesets updates package versions and
-`CHANGELOG.md`.
+## Безопасность
 
-When preparing a release:
-
-- update the changelog/release notes
-- make sure `pnpm check` and `pnpm test` pass
-- verify local plugin install still works
-- publish the package
-- create a GitHub Release with concise notes
-
-If the plugin is published publicly, follow the OpenClaw community plugin
-submission guidance:
-
-- https://docs.openclaw.ai/plugins/community#submit-your-plugin
-
-## Security
-
-Do not commit:
-
-- real VK tokens
-- real user IDs unless clearly intended for tests/examples
-- private configuration values
-
-If you discover a security issue in the plugin, open a private report through
-the appropriate repository/security channel instead of filing a public issue
-with sensitive details.
+Не добавляйте в репозиторий реальные токены, приватные конфигурации или реальные
+идентификаторы пользователей без необходимости.
