@@ -1,5 +1,6 @@
 {
   "id": "vkteams",
+  "name": "VK Teams",
   "kind": "channel",
   "channels": ["vkteams"],
   "channelConfigs": {
