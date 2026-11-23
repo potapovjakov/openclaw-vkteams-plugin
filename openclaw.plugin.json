@@ -2,6 +2,47 @@
   "id": "vkteams",
   "kind": "channel",
   "channels": ["vkteams"],
+  "channelConfigs": {
+    "vkteams": {
+      "label": "VK Teams",
+      "description": "VK Teams Bot API direct-message channel.",
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "name": { "type": "string" },
+          "botToken": {},
+          "tokenFile": { "type": "string" },
+          "apiBaseUrl": { "type": "string", "format": "uri" },
+          "pollTime": { "type": "integer", "minimum": 1, "maximum": 120 },
+          "dmPolicy": {
+            "type": "string",
+            "enum": ["pairing", "allowlist", "open", "disabled"]
+          },
+          "allowFrom": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "accounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "defaultAccount": { "type": "string" }
+        }
+      },
+      "uiHints": {
+        "botToken": { "label": "VK Teams bot token", "sensitive": true },
+        "tokenFile": { "label": "Token file", "placeholder": "~/.openclaw/workspace/secrets/vkteams-token.txt" },
+        "apiBaseUrl": { "label": "API base URL", "placeholder": "https://api.armgs.team/bot/v1" },
+        "pollTime": { "label": "Long-poll timeout (seconds)" },
+        "allowFrom": { "label": "Allowed user IDs" }
+      }
+    }
+  },
   "configSchema": {
     "type": "object",
     "additionalProperties": false,
