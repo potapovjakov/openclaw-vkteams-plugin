@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { notifyVkTeamsPairingApproval } from "./channel.runtime.js";
 
-const sendVkTeamsText = vi.fn(async () => ({ ok: true }));
+const { sendVkTeamsText } = vi.hoisted(() => ({
+  sendVkTeamsText: vi.fn(async () => ({ ok: true })),
+}));
 
 vi.mock("./send.js", () => ({
   sendVkTeamsText,
@@ -8,8 +11,6 @@ vi.mock("./send.js", () => ({
 
 describe("notifyVkTeamsPairingApproval", () => {
   it("uses the non-default account token when accountId is provided", async () => {
-    const { notifyVkTeamsPairingApproval } = await import("./channel.runtime.js");
-
     await notifyVkTeamsPairingApproval({
       cfg: {
         channels: {

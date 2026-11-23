@@ -1,2 +1,8 @@
 packages:
   - "."
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - '@google/genai'
+  - openclaw
+  - protobufjs
