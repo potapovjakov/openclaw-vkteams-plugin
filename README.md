@@ -72,7 +72,8 @@ chmod 600 "$HOME/.openclaw/workspace/secrets/vkteams-token.txt"
 Gateway. Плагин использует её, если токен не задан в конфигурации или файле.
 
 API URL по умолчанию — `https://api.armgs.team/bot/v1`. Его можно изменить
-параметром `apiBaseUrl`.
+параметром `apiBaseUrl`. Укажите конечный HTTPS-адрес: плагин не следует
+перенаправлениям для запросов к Bot API.
 
 ## Проверка и pairing
 

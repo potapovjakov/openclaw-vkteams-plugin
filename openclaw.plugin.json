@@ -1,6 +1,6 @@
 {
   "id": "vkteams",
-  "name": "VK Teams",
+  "name": "VK Teams Bot",
   "kind": "channel",
   "channels": ["vkteams"],
   "channelConfigs": {
