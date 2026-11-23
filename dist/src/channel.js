@@ -4,7 +4,6 @@ import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-sch
 import { createRawChannelSendResultAdapter } from "openclaw/plugin-sdk/channel-send-result";
 import { createChatChannelPlugin } from "openclaw/plugin-sdk/core";
 import { createChannelDirectoryAdapter, listResolvedDirectoryUserEntriesFromAllowFrom, } from "openclaw/plugin-sdk/directory-runtime";
-import { createStaticReplyToModeResolver } from "openclaw/plugin-sdk/conversation-runtime";
 import { buildTokenChannelStatusSummary, PAIRING_APPROVED_MESSAGE, } from "openclaw/plugin-sdk/channel-status";
 import { createComputedAccountStatusAdapter, createDefaultChannelRuntimeState, } from "openclaw/plugin-sdk/status-helpers";
 import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/setup";
@@ -146,7 +145,7 @@ export const vkTeamsPlugin = createChatChannelPlugin({
         },
     },
     threading: {
-        resolveReplyToMode: createStaticReplyToModeResolver("off"),
+        resolveReplyToMode: () => "off",
     },
     outbound: {
         deliveryMode: "direct",

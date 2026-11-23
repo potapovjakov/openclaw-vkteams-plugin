@@ -1,6 +1,5 @@
 import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
-import { resolveInboundDirectDmAccessWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
-import { dispatchInboundDirectDmWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
+import { dispatchInboundDirectDm, resolveInboundDirectDmAccessWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
 import { saveMediaSource } from "openclaw/plugin-sdk/media-store";
 import { getVkTeamsEvents, getVkTeamsFileInfo, getVkTeamsSelf } from "./api.js";
 import { sendVkTeamsText } from "./send.js";
@@ -62,9 +61,34 @@ export async function monitorVkTeamsProvider(p) {
                 const rawBody = text || (mediaPaths.length > 0 ? "[Изображение]" : "");
                 if (!rawBody && mediaPaths.length === 0)
                     continue;
-                await withVkTeamsTyping({ apiBaseUrl, token, chatId, signal: abortSignal, onError: () => log?.debug?.(`[${account.accountId}] typing indicator update failed`) }, async () => await dispatchInboundDirectDmWithRuntime({ cfg: config, runtime, channel: "vkteams", channelLabel: "VK Teams", accountId: account.accountId, peer: { kind: "direct", id: senderId }, senderId, senderAddress: `vkteams:${senderId}`, recipientAddress: `vkteams:${account.accountId}`, conversationLabel: x?.from?.firstName || senderId, rawBody, messageId: x?.msgId || String(event.eventId), timestamp: x?.timestamp ? x.timestamp * 1000 : Date.now(), commandAuthorized: access.commandAuthorized, extraContext: mediaPaths.length > 0 ? { MediaPaths: mediaPaths, MediaTypes: mediaTypes, MediaUrls: mediaUrls } : undefined, deliver: async (reply) => { const out = reply && typeof reply === "object" && "text" in reply ? String(reply.text ?? "") : ""; if (!out.trim())
-                        return; const sent = await sendVkTeamsText(chatId, out, { token, cfg: config, accountId: account.accountId }); if (!sent.ok)
-                        throw new Error(sent.error); statusSink({ lastOutboundAt: Date.now() }); }, onRecordError: (e) => log?.error?.(`[${account.accountId}] inbound record failed: ${String(e)}`), onDispatchError: (e, info) => log?.error?.(`[${account.accountId}] ${info.kind} dispatch failed: ${String(e)}`) }));
+                await withVkTeamsTyping({ apiBaseUrl, token, chatId, signal: abortSignal, onError: () => log?.debug?.(`[${account.accountId}] typing indicator update failed`) }, async () => await dispatchInboundDirectDm({
+                    cfg: config,
+                    channelRuntime: runtime.channel,
+                    channel: "vkteams",
+                    channelLabel: "VK Teams",
+                    accountId: account.accountId,
+                    peer: { kind: "direct", id: senderId },
+                    senderId,
+                    senderAddress: `vkteams:${senderId}`,
+                    recipientAddress: `vkteams:${account.accountId}`,
+                    conversationLabel: x?.from?.firstName || senderId,
+                    rawBody,
+                    messageId: x?.msgId || String(event.eventId),
+                    timestamp: x?.timestamp ? x.timestamp * 1000 : Date.now(),
+                    commandAuthorized: access.commandAuthorized,
+                    extraContext: mediaPaths.length > 0 ? { MediaPaths: mediaPaths, MediaTypes: mediaTypes, MediaUrls: mediaUrls } : undefined,
+                    deliver: async (reply) => {
+                        const out = reply && typeof reply === "object" && "text" in reply ? String(reply.text ?? "") : "";
+                        if (!out.trim())
+                            return;
+                        const sent = await sendVkTeamsText(chatId, out, { token, cfg: config, accountId: account.accountId });
+                        if (!sent.ok)
+                            throw new Error(sent.error);
+                        statusSink({ lastOutboundAt: Date.now() });
+                    },
+                    onRecordError: (e) => log?.error?.(`[${account.accountId}] inbound record failed: ${String(e)}`),
+                    onDispatchError: (e, info) => log?.error?.(`[${account.accountId}] ${info.kind} dispatch failed: ${String(e)}`),
+                }));
             }
         }
         catch (e) {
