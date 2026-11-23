@@ -11,7 +11,6 @@ import {
   createChannelDirectoryAdapter,
   listResolvedDirectoryUserEntriesFromAllowFrom,
 } from "openclaw/plugin-sdk/directory-runtime";
-import { createStaticReplyToModeResolver } from "openclaw/plugin-sdk/conversation-runtime";
 import {
   buildTokenChannelStatusSummary,
   PAIRING_APPROVED_MESSAGE,
@@ -170,7 +169,7 @@ export const vkTeamsPlugin: ChannelPlugin<ResolvedVkTeamsAccount, VkTeamsProbeRe
     },
   },
   threading: {
-    resolveReplyToMode: createStaticReplyToModeResolver("off"),
+    resolveReplyToMode: () => "off",
   },
   outbound: {
     deliveryMode: "direct",
