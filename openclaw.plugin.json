@@ -1,0 +1,10 @@
+{
+  "id": "vkteams",
+  "kind": "channel",
+  "channels": ["vkteams"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}
