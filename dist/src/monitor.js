@@ -1,7 +1,8 @@
 import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
 import { resolveInboundDirectDmAccessWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
 import { dispatchInboundDirectDmWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
-import { getVkTeamsEvents, getVkTeamsSelf } from "./api.js";
+import { saveMediaSource } from "openclaw/plugin-sdk/media-store";
+import { getVkTeamsEvents, getVkTeamsFileInfo, getVkTeamsSelf } from "./api.js";
 import { sendVkTeamsText } from "./send.js";
 const allowed = (id, list = []) => list.some((x) => x.trim() === "*" || x.trim().replace(/^vkteams:/i, "") === id);
 export async function monitorVkTeamsProvider(p) {
@@ -22,14 +23,15 @@ export async function monitorVkTeamsProvider(p) {
                 const senderId = x?.from?.userId?.trim();
                 const chatId = x?.chat?.chatId?.trim() || senderId;
                 const text = x?.text ?? "";
-                if (!senderId || !chatId || !text)
+                const imageParts = (x?.parts ?? []).filter((part) => part.type === "file" && part.payload?.type === "image" && part.payload.fileId);
+                if (!senderId || !chatId || (!text && imageParts.length === 0))
                     continue;
                 if (x?.chat?.type && x.chat.type !== "private") {
                     log?.debug?.(`[${account.accountId}] ignoring non-private message`);
                     continue;
                 }
                 statusSink({ lastInboundAt: Date.now(), lastError: null });
-                const access = await resolveInboundDirectDmAccessWithRuntime({ cfg: config, channel: "vkteams", accountId: account.accountId, dmPolicy: account.config.dmPolicy ?? "pairing", allowFrom: account.config.allowFrom, senderId, rawBody: text, isSenderAllowed: allowed, runtime: { shouldComputeCommandAuthorized: runtime.channel.commands.shouldComputeCommandAuthorized, resolveCommandAuthorizedFromAuthorizers: runtime.channel.commands.resolveCommandAuthorizedFromAuthorizers }, modeWhenAccessGroupsOff: "configured" });
+                const access = await resolveInboundDirectDmAccessWithRuntime({ cfg: config, channel: "vkteams", accountId: account.accountId, dmPolicy: account.config.dmPolicy ?? "pairing", allowFrom: account.config.allowFrom, senderId, rawBody: text || "[Изображение]", isSenderAllowed: allowed, runtime: { shouldComputeCommandAuthorized: runtime.channel.commands.shouldComputeCommandAuthorized, resolveCommandAuthorizedFromAuthorizers: runtime.channel.commands.resolveCommandAuthorizedFromAuthorizers }, modeWhenAccessGroupsOff: "configured" });
                 if (access.access.decision === "pairing") {
                     await pairing.issueChallenge({ senderId, senderIdLine: `Your VK Teams user id: ${senderId}`, sendPairingReply: async (reply) => { const sent = await sendVkTeamsText(chatId, reply, { token, cfg: config, accountId: account.accountId }); if (!sent.ok)
                             throw new Error(sent.error); statusSink({ lastOutboundAt: Date.now() }); }, onCreated: () => log?.debug?.(`[${account.accountId}] pairing request sender=${senderId}`), onReplyError: (e) => log?.warn?.(`[${account.accountId}] pairing reply failed: ${String(e)}`) });
@@ -37,7 +39,29 @@ export async function monitorVkTeamsProvider(p) {
                 }
                 if (access.access.decision !== "allow")
                     continue;
-                await dispatchInboundDirectDmWithRuntime({ cfg: config, runtime, channel: "vkteams", channelLabel: "VK Teams", accountId: account.accountId, peer: { kind: "direct", id: senderId }, senderId, senderAddress: `vkteams:${senderId}`, recipientAddress: `vkteams:${account.accountId}`, conversationLabel: x?.from?.firstName || senderId, rawBody: text, messageId: x?.msgId || String(event.eventId), timestamp: x?.timestamp ? x.timestamp * 1000 : Date.now(), commandAuthorized: access.commandAuthorized, deliver: async (reply) => { const out = reply && typeof reply === "object" && "text" in reply ? String(reply.text ?? "") : ""; if (!out.trim())
+                const mediaPaths = [];
+                const mediaTypes = [];
+                const mediaUrls = [];
+                for (const part of imageParts) {
+                    try {
+                        const info = await getVkTeamsFileInfo({ apiBaseUrl, token, fileId: part.payload.fileId, signal: abortSignal });
+                        if (!info.url) {
+                            log?.warn?.(`[${account.accountId}] image file ${part.payload.fileId} has no download URL`);
+                            continue;
+                        }
+                        const saved = await saveMediaSource(info.url, undefined, undefined, undefined);
+                        mediaPaths.push(saved.path);
+                        mediaTypes.push(info.type === "image" ? "image/*" : "application/octet-stream");
+                        mediaUrls.push(info.url);
+                    }
+                    catch (error) {
+                        log?.warn?.(`[${account.accountId}] failed to download VK Teams image: ${error instanceof Error ? error.message : String(error)}`);
+                    }
+                }
+                const rawBody = text || (mediaPaths.length > 0 ? "[Изображение]" : "");
+                if (!rawBody && mediaPaths.length === 0)
+                    continue;
+                await dispatchInboundDirectDmWithRuntime({ cfg: config, runtime, channel: "vkteams", channelLabel: "VK Teams", accountId: account.accountId, peer: { kind: "direct", id: senderId }, senderId, senderAddress: `vkteams:${senderId}`, recipientAddress: `vkteams:${account.accountId}`, conversationLabel: x?.from?.firstName || senderId, rawBody, messageId: x?.msgId || String(event.eventId), timestamp: x?.timestamp ? x.timestamp * 1000 : Date.now(), commandAuthorized: access.commandAuthorized, extraContext: mediaPaths.length > 0 ? { MediaPaths: mediaPaths, MediaTypes: mediaTypes, MediaUrls: mediaUrls } : undefined, deliver: async (reply) => { const out = reply && typeof reply === "object" && "text" in reply ? String(reply.text ?? "") : ""; if (!out.trim())
                         return; const sent = await sendVkTeamsText(chatId, out, { token, cfg: config, accountId: account.accountId }); if (!sent.ok)
                         throw new Error(sent.error); statusSink({ lastOutboundAt: Date.now() }); }, onRecordError: (e) => log?.error?.(`[${account.accountId}] inbound record failed: ${String(e)}`), onDispatchError: (e, info) => log?.error?.(`[${account.accountId}] ${info.kind} dispatch failed: ${String(e)}`) });
             }

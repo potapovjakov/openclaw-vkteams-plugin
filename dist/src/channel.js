@@ -66,7 +66,7 @@ export const vkTeamsPlugin = createChatChannelPlugin({
         },
         capabilities: {
             chatTypes: ["direct"],
-            media: false,
+            media: true,
             reactions: false,
             threads: false,
             polls: false,

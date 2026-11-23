@@ -18,5 +18,6 @@ async function requestJson(p) {
 }
 export async function getVkTeamsSelf(p) { return await requestJson({ ...p, method: "self/get" }); }
 export async function getVkTeamsEvents(p) { return await requestJson({ ...p, method: "events/get", query: { lastEventId: p.lastEventId, pollTime: p.pollTime } }); }
+export async function getVkTeamsFileInfo(p) { return await requestJson({ ...p, method: "files/getInfo", query: { fileId: p.fileId } }); }
 export async function sendVkTeamsText(p) { return await requestJson({ ...p, method: "messages/sendText", query: { chatId: p.chatId, text: p.text } }); }
 //# sourceMappingURL=api.js.map

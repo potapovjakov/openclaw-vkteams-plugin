@@ -87,7 +87,7 @@ export const vkTeamsPlugin: ChannelPlugin<ResolvedVkTeamsAccount, VkTeamsProbeRe
     },
     capabilities: {
       chatTypes: ["direct"],
-      media: false,
+      media: true,
       reactions: false,
       threads: false,
       polls: false,
