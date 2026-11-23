@@ -2,21 +2,21 @@ import fs from "node:fs";
 
 const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const version = String(pkg.version ?? "").trim();
-const pattern = /^\d{4}\.\d{1,2}\.\d+(?:-beta\.\d+)?$/;
+const pattern = /^(?:\d{2}|\d{4})\.\d{1,2}\.\d+(?:-beta\.\d+)?$/;
 
 if (!pattern.test(version)) {
   console.error(`Invalid package version: ${version}`);
-  console.error("Expected YYYY.M.K or YYYY.M.K-beta.N");
+  console.error("Expected YY.M.K, YYYY.M.K, or the corresponding -beta.N form");
   process.exit(1);
 }
 
 const ref = process.env.GITHUB_REF?.trim();
 if (ref && ref.startsWith("refs/tags/")) {
   const tag = ref.slice("refs/tags/".length);
-  const tagPattern = /^v\d{4}\.\d{1,2}\.\d+(?:-beta\.\d+)?$/;
+  const tagPattern = /^v(?:\d{2}|\d{4})\.\d{1,2}\.\d+(?:-beta\.\d+)?$/;
   if (!tagPattern.test(tag)) {
     console.error(`Invalid release tag: ${tag}`);
-    console.error("Expected vYYYY.M.K or vYYYY.M.K-beta.N");
+    console.error("Expected vYY.M.K, vYYYY.M.K, or the corresponding -beta.N form");
     process.exit(1);
   }
   const expectedTag = `v${version}`;
