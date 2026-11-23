@@ -34,16 +34,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Require changeset for user-facing changes
+      - name: Require a changeset or documented version bump
         if: github.event_name == 'pull_request'
         shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
 
-          BASE_REF="origin/${{ github.base_ref }}"
-          git fetch origin "${{ github.base_ref }}" --depth=1
-
-          CHANGED_FILES="$(git diff --name-only "${BASE_REF}...HEAD")"
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" HEAD)"
           echo "Changed files:"
           echo "${CHANGED_FILES}"
 
@@ -60,7 +59,9 @@ jobs:
 
             case "$file" in
               .changeset/*.md)
-                HAS_CHANGESET=1
+                if [[ "$file" != .changeset/README.md && -f "$file" ]]; then
+                  HAS_CHANGESET=1
+                fi
                 ;;
               README.md|CONTRIBUTING.md|LICENSE|.gitignore|.github/*|.githooks/*|scripts/*|*.md)
                 ;;
@@ -72,13 +73,40 @@ jobs:
           ${CHANGED_FILES}
           EOF
 
-          if [ "$NEEDS_CHANGESET" -eq 1 ] && [ "$HAS_CHANGESET" -ne 1 ]; then
-            echo "User-facing or package changes detected without a changeset."
-            echo "Run: pnpm changeset"
-            exit 1
+          if [ "$NEEDS_CHANGESET" -eq 0 ] || [ "$HAS_CHANGESET" -eq 1 ]; then
+            echo "Changeset check passed."
+            exit 0
           fi
 
-          echo "Changeset check passed."
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+
+          const baseFile = (path) => execFileSync('git', ['show', `${process.env.BASE_SHA}:${path}`], { encoding: 'utf8' });
+          const baseVersion = JSON.parse(baseFile('package.json')).version;
+          const headVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
+          const versionParts = (version) => {
+            const match = /^(\d{2}|\d{4})\.(\d{1,2})\.(\d+)(?:-beta\.(\d+))?$/.exec(version);
+            return match && [...match.slice(1, 4).map(BigInt), match[4] === undefined ? null : BigInt(match[4])];
+          };
+          const isBump = (base, head) => {
+            if (!base || !head) return false;
+            for (let i = 0; i < 3; i++) {
+              if (head[i] !== base[i]) return head[i] > base[i];
+            }
+            return base[3] !== null && (head[3] === null || head[3] > base[3]);
+          };
+          const heading = `## ${headVersion}`;
+          const hasHeading = (text) => text.split(/\r?\n/).some((line) => line.trimEnd() === heading);
+
+          if (!isBump(versionParts(baseVersion), versionParts(headVersion)) ||
+              !hasHeading(readFileSync('CHANGELOG.md', 'utf8')) ||
+              hasHeading(baseFile('CHANGELOG.md'))) {
+            console.error('Add a changeset (pnpm changeset), or bump package.json and add a matching version heading to CHANGELOG.md.');
+            process.exit(1);
+          }
+          console.log(`Documented release version bump: ${baseVersion} -> ${headVersion}`);
+          NODE
 
       - name: Typecheck
         run: pnpm check
