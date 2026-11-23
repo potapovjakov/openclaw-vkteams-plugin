@@ -99,11 +99,16 @@ openclaw gateway run --force
 
 ## Локальная разработка
 
+Используйте Node.js из `.nvmrc` и версию pnpm из `package.json`.
+
 ```bash
-npm install
-npm test
-npm run check
-npm run build
+nvm install
+nvm use
+npm install -g pnpm@10.34.9
+pnpm install --frozen-lockfile
+pnpm check
+pnpm test
+pnpm build
 ```
 
 После сборки:
