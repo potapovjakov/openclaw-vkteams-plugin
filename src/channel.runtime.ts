@@ -14,9 +14,8 @@ export async function notifyVkTeamsPairingApproval(params: {
   if (!account.token) {
     throw new Error("VK Teams token not configured");
   }
-  await sendVkTeamsText(params.id, "OpenClaw: your access has been approved.", {
-    token: account.token,
-  });
+  const result = await sendVkTeamsText(params.id, "OpenClaw: your access has been approved.", { account });
+  if (!result.ok) throw new Error(result.error);
 }
 
 export async function sendVkTeamsTextFromRuntime(
