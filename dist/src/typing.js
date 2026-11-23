@@ -1,0 +1,35 @@
+import { sendVkTeamsAction } from "./api.js";
+const REFRESH_MS = 4_000;
+export async function withVkTeamsTyping(options, run) {
+    const controller = new AbortController();
+    const signal = AbortSignal.any([options.signal, controller.signal]);
+    let timer;
+    const stop = () => {
+        controller.abort();
+        clearTimeout(timer);
+    };
+    const refresh = async () => {
+        if (signal.aborted)
+            return;
+        try {
+            await sendVkTeamsAction({ ...options, action: "typing", signal: AbortSignal.any([signal, AbortSignal.timeout(REFRESH_MS)]) });
+        }
+        catch {
+            if (!signal.aborted)
+                options.onError?.();
+            return; // Typing is best effort; don't retry a failing endpoint on this turn.
+        }
+        if (!signal.aborted)
+            timer = setTimeout(() => void refresh(), REFRESH_MS);
+    };
+    options.signal.addEventListener("abort", stop, { once: true });
+    try {
+        void refresh();
+        return await run();
+    }
+    finally {
+        stop();
+        options.signal.removeEventListener("abort", stop);
+    }
+}
+//# sourceMappingURL=typing.js.map
