@@ -1,7 +1,7 @@
 {
   "name": "openclaw-vkteams-plugin",
   "version": "26.1.7",
-  "description": "VK Teams Bot API channel plugin for OpenClaw",
+  "description": "VK Teams Bot API channel plugin for OpenClaw. Also known as Среда, АРМГС, and КС АРМГС.",
   "type": "module",
   "packageManager": "pnpm@10.34.9",
   "files": [
@@ -44,7 +44,12 @@
     "openclaw",
     "plugin",
     "channel",
-    "vk"
+    "vk",
+    "vk-teams",
+    "vkteams",
+    "среда",
+    "армгс",
+    "кс армгс"
   ],
   "license": "MIT",
   "openclaw": {

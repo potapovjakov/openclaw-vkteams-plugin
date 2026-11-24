@@ -5,6 +5,7 @@
 [![Publish to npm](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml/badge.svg?event=push)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml)
 
 Плагин канала VK Teams для OpenClaw. Использует VK Teams Bot API и long polling.
+То же решение может встречаться под названиями **Среда**, **АРМГС** и **КС АРМГС**.
 
 ## Возможности
 
