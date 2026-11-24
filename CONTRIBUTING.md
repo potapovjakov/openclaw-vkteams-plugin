@@ -11,10 +11,10 @@
 
 ## Среда разработки
 
-Требуются Node.js, совместимый с установленной версией OpenClaw, и npm.
+Используйте версию Node.js из `.nvmrc` и версию pnpm из `package.json`.
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 ## Проверки
@@ -22,9 +22,9 @@ npm install
 Перед pull request выполните:
 
 ```bash
-npm run check
-npm test
-npm run build
+pnpm check
+pnpm test
+pnpm build
 ```
 
 Для изменений setup или runtime дополнительно проверьте загрузку плагина:
@@ -65,12 +65,9 @@ type(scope): summary
 
 ## Выпуски
 
-Стабильные версии используют формат `YYYY.M.K`, beta-версии —
-`YYYY.M.K-beta.N`. Для пользовательских изменений добавляйте changeset:
-
-```bash
-npx changeset
-```
+Для пользовательских изменений добавляйте запись в раздел `Unreleased` файла
+[`CHANGELOG.md`](CHANGELOG.md). Порядок подготовки и публикации версии описан
+в [`RELEASING.md`](RELEASING.md).
 
 ## Безопасность
 
