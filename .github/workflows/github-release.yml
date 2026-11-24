@@ -1,0 +1,53 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+
+      - name: Verify release source and prepare notes
+        run: |
+          set -euo pipefail
+          node scripts/validate-version.mjs
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo 'The release tag must point to a commit on main.'
+            exit 1
+          }
+          node scripts/release-notes.mjs > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          args=(--verify-tag --title "VK Teams Bot $tag" --notes-file "$RUNNER_TEMP/release-notes.md")
+          if [[ "$tag" == *-beta.* ]]; then args+=(--prerelease --latest=false); fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "GitHub Release already exists for $tag."
+          else
+            gh release create "$tag" "${args[@]}"
+          fi

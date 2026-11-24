@@ -1,6 +1,5 @@
 import { describeAccountSnapshot } from "openclaw/plugin-sdk/account-helpers";
 import { adaptScopedAccountAccessor, createScopedChannelConfigAdapter, createScopedDmSecurityResolver, } from "openclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
 import { createRawChannelSendResultAdapter } from "openclaw/plugin-sdk/channel-send-result";
 import { createChatChannelPlugin } from "openclaw/plugin-sdk/core";
 import { createChannelDirectoryAdapter, listResolvedDirectoryUserEntriesFromAllowFrom, } from "openclaw/plugin-sdk/directory-runtime";
@@ -73,7 +72,7 @@ export const vkTeamsPlugin = createChatChannelPlugin({
             blockStreaming: true,
         },
         reload: { configPrefixes: ["channels.vkteams"] },
-        configSchema: buildChannelConfigSchema(VkTeamsConfigSchema),
+        configSchema: VkTeamsConfigSchema,
         setup: vkSetupAdapter,
         setupWizard: vkSetupWizard,
         config: {

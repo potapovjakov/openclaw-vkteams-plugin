@@ -37,6 +37,7 @@
       },
       "uiHints": {
         "botToken": { "label": "VK Teams bot token", "sensitive": true },
+        "accounts.*.botToken": { "label": "VK Teams bot token", "sensitive": true },
         "tokenFile": { "label": "Token file", "placeholder": "~/.openclaw/workspace/secrets/vkteams-token.txt" },
         "apiBaseUrl": { "label": "API base URL", "placeholder": "https://api.armgs.team/bot/v1" },
         "pollTime": { "label": "Long-poll timeout (seconds)" },
