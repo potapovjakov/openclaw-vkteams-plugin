@@ -1,6 +1,6 @@
 {
   "name": "openclaw-vkteams-plugin",
-  "version": "26.1.6",
+  "version": "26.1.7",
   "description": "VK Teams Bot API channel plugin for OpenClaw",
   "type": "module",
   "packageManager": "pnpm@10.34.9",

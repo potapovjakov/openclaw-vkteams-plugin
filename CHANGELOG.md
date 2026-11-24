@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+## 26.1.7
+
 - Настроена публикация новых версий из одного git-тега в ClawHub и npm.
 - GitHub Release создаётся отдельным workflow; его описание берётся из этого файла.
 - Конфигурация VK Teams проверяется через JSON Schema OpenClaw SDK. Плагин больше не устанавливает собственную копию Zod, которая вызывала предупреждения `Plugin runtime compatibility`.
