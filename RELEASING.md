@@ -27,13 +27,13 @@
 ## Публикация
 
 После слияния релизного PR создайте тег `v<версия>` на коммите выпуска из `main`.
-Например, для будущего выпуска `26.1.7`:
+Например, для выпуска `26.1.8`:
 
 ```bash
 git switch main
 git pull --ff-only
-git tag -a v26.1.7 <коммит-релиза> -m 'Release 26.1.7'
-git push origin refs/tags/v26.1.7
+git tag -a v26.1.8 <коммит-релиза> -m 'Release 26.1.8'
+git push origin refs/tags/v26.1.8
 ```
 
 - **Create GitHub Release** берёт описание из раздела текущей версии в
