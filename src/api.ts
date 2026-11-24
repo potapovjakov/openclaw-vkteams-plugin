@@ -1,5 +1,5 @@
 export type VkTeamsBotInfo = { userId?: string; nick?: string; firstName?: string; about?: string };
-export type VkTeamsFilePart = {
+export type VkTeamsMessagePart = {
   type?: "sticker" | "mention" | "voice" | "file" | "forward" | "reply";
   payload?: {
     fileId?: string;
@@ -14,7 +14,7 @@ export type VkTeamsEventPayload = {
   from?: { userId?: string; firstName?: string; lastName?: string };
   text?: string;
   timestamp?: number;
-  parts?: VkTeamsFilePart[];
+  parts?: VkTeamsMessagePart[];
 };
 export type VkTeamsEvent = { eventId: number; type: string; payload?: VkTeamsEventPayload };
 export type VkTeamsEventsResponse = { events?: VkTeamsEvent[] };
