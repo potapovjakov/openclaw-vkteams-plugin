@@ -1,2 +1,2 @@
-export { buildSecretInputSchema, hasConfiguredSecretInput, normalizeResolvedSecretInputString, normalizeSecretInputString, } from "openclaw/plugin-sdk/secret-input";
+export { hasConfiguredSecretInput, normalizeResolvedSecretInputString, normalizeSecretInputString, } from "openclaw/plugin-sdk/secret-input";
 //# sourceMappingURL=secret-input.js.map

@@ -34,49 +34,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Require a changeset or documented version bump
+      - name: Require a changelog entry
         if: github.event_name == 'pull_request'
         shell: bash
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-
-          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" HEAD)"
-          echo "Changed files:"
-          echo "${CHANGED_FILES}"
-
-          if [ -z "${CHANGED_FILES}" ]; then
-            echo "No changed files detected."
-            exit 0
-          fi
-
-          NEEDS_CHANGESET=0
-          HAS_CHANGESET=0
-
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-
-            case "$file" in
-              .changeset/*.md)
-                if [[ "$file" != .changeset/README.md && -f "$file" ]]; then
-                  HAS_CHANGESET=1
-                fi
-                ;;
-              README.md|CONTRIBUTING.md|LICENSE|.gitignore|.github/*|.githooks/*|scripts/*|*.md)
-                ;;
-              *)
-                NEEDS_CHANGESET=1
-                ;;
-            esac
-          done <<EOF
-          ${CHANGED_FILES}
-          EOF
-
-          if [ "$NEEDS_CHANGESET" -eq 0 ] || [ "$HAS_CHANGESET" -eq 1 ]; then
-            echo "Changeset check passed."
-            exit 0
-          fi
 
           node --input-type=module <<'NODE'
           import { execFileSync } from 'node:child_process';
@@ -85,6 +49,28 @@ jobs:
           const baseFile = (path) => execFileSync('git', ['show', `${process.env.BASE_SHA}:${path}`], { encoding: 'utf8' });
           const baseVersion = JSON.parse(baseFile('package.json')).version;
           const headVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
+          const section = (text, heading) => {
+            const lines = text.split(/\r?\n/);
+            const start = lines.findIndex((line) => line.trimEnd() === `## ${heading}`);
+            if (start === -1) return null;
+            const end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
+            return lines.slice(start + 1, end === -1 ? undefined : end).join('\n').trim();
+          };
+          const baseLog = baseFile('CHANGELOG.md');
+          const headLog = readFileSync('CHANGELOG.md', 'utf8');
+          if (headVersion === baseVersion) {
+            const paths = execFileSync('git', ['diff', '--name-only', '-z', process.env.BASE_SHA, 'HEAD'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+            const needsEntry = paths.some((path) => /^(dist\/|openclaw\.plugin\.json$|src\/)/.test(path) && !path.endsWith('.test.ts'));
+            if (!needsEntry) process.exit(0);
+            const previous = new Set((section(baseLog, 'Unreleased') ?? '').split('\n').map((line) => line.trim()));
+            const entries = (section(headLog, 'Unreleased') ?? '').split('\n').map((line) => line.trim());
+            if (!entries.some((line) => /^-\s+\S/.test(line) && !previous.has(line))) {
+              console.error('Add an entry under ## Unreleased in CHANGELOG.md.');
+              process.exit(1);
+            }
+            process.exit(0);
+          }
+
           const versionParts = (version) => {
             const match = /^(\d{2}|\d{4})\.(\d{1,2})\.(\d+)(?:-beta\.(\d+))?$/.exec(version);
             return match && [...match.slice(1, 4).map(BigInt), match[4] === undefined ? null : BigInt(match[4])];
@@ -96,13 +82,9 @@ jobs:
             }
             return base[3] !== null && (head[3] === null || head[3] > base[3]);
           };
-          const heading = `## ${headVersion}`;
-          const hasHeading = (text) => text.split(/\r?\n/).some((line) => line.trimEnd() === heading);
-
           if (!isBump(versionParts(baseVersion), versionParts(headVersion)) ||
-              !hasHeading(readFileSync('CHANGELOG.md', 'utf8')) ||
-              hasHeading(baseFile('CHANGELOG.md'))) {
-            console.error('Add a changeset (pnpm changeset), or bump package.json and add a matching version heading to CHANGELOG.md.');
+              !section(headLog, headVersion) || section(baseLog, headVersion) !== null) {
+            console.error('Bump package.json and add a new, non-empty matching version section to CHANGELOG.md.');
             process.exit(1);
           }
           console.log(`Documented release version bump: ${baseVersion} -> ${headVersion}`);

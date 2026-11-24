@@ -1,0 +1,80 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify release source
+        run: |
+          set -euo pipefail
+          pnpm check:version
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            git merge-base --is-ancestor HEAD origin/main || {
+              echo 'The release tag must point to a commit on main.'
+              exit 1
+            }
+          fi
+
+      - name: Test, build and pack
+        id: pack
+        run: |
+          set -euo pipefail
+          pnpm install --frozen-lockfile
+          pnpm check
+          pnpm test
+          pnpm build
+          git diff --exit-code -- dist
+          archive=$(npm pack --ignore-scripts --silent --pack-destination "$RUNNER_TEMP")
+          echo "archive=$RUNNER_TEMP/$archive" >> "$GITHUB_OUTPUT"
+          version=$(node -p 'require("./package.json").version')
+          tag=latest
+          if [[ "$version" == *-beta.* ]]; then tag=beta; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Preview publication
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ARCHIVE: ${{ steps.pack.outputs.archive }}
+          NPM_DIST_TAG: ${{ steps.pack.outputs.tag }}
+        run: npm publish "$ARCHIVE" --access public --tag "$NPM_DIST_TAG" --ignore-scripts --dry-run
+
+      - name: Publish to npm
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          ARCHIVE: ${{ steps.pack.outputs.archive }}
+          NPM_DIST_TAG: ${{ steps.pack.outputs.tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$NODE_AUTH_TOKEN" ]]; then
+            echo 'Configure the NPM_TOKEN Actions secret before pushing a release tag.'
+            exit 1
+          fi
+          npm publish "$ARCHIVE" --access public --tag "$NPM_DIST_TAG" --ignore-scripts

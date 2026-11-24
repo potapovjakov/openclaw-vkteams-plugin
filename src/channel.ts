@@ -4,7 +4,6 @@ import {
   createScopedChannelConfigAdapter,
   createScopedDmSecurityResolver,
 } from "openclaw/plugin-sdk/channel-config-helpers";
-import { buildChannelConfigSchema } from "openclaw/plugin-sdk/channel-config-schema";
 import { createRawChannelSendResultAdapter } from "openclaw/plugin-sdk/channel-send-result";
 import { createChatChannelPlugin, type ChannelPlugin, type OpenClawConfig } from "openclaw/plugin-sdk/core";
 import {
@@ -94,7 +93,7 @@ export const vkTeamsPlugin: ChannelPlugin<ResolvedVkTeamsAccount, VkTeamsProbeRe
       blockStreaming: true,
     },
     reload: { configPrefixes: ["channels.vkteams"] },
-    configSchema: buildChannelConfigSchema(VkTeamsConfigSchema),
+    configSchema: VkTeamsConfigSchema,
     setup: vkSetupAdapter,
     setupWizard: vkSetupWizard,
     config: {

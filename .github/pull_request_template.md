@@ -22,7 +22,7 @@ What did you run?
 
 - [ ] `pnpm check`
 - [ ] `pnpm test`
-- [ ] `pnpm changeset` (if user-visible)
+- [ ] `pnpm build`
 - [ ] Local OpenClaw plugin install
 - [ ] `openclaw channels add --channel vk`
 - [ ] VK manual smoke test
@@ -35,17 +35,10 @@ paste commands/results here
 
 ## User-Facing Impact
 
-- [ ] Requires a changeset
+- [ ] Added an entry to `CHANGELOG.md` (under `Unreleased`, or under the new version for a release PR)
 - [ ] No user-facing change
 
 If user-facing, summarize the behavior change:
-
--
-
-## Release Notes
-
-If this PR should affect release notes, summarize the user-visible change in one
-or two sentences:
 
 -
 

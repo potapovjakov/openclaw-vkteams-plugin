@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/ci.yml)
 [![Publish to ClawHub](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/clawhub-publish.yml/badge.svg?event=push)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/clawhub-publish.yml)
+[![Publish to npm](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml/badge.svg?event=push)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml)
 
 Плагин канала VK Teams для OpenClaw. Использует VK Teams Bot API и long polling.
 
@@ -12,6 +13,7 @@
 - отправка текстовых ответов через `/messages/sendText`;
 - plain-text ответы без Markdown-разметки;
 - индикатор набора текста во время подготовки ответа;
+- приём изображений в личных сообщениях, с подписью или без неё;
 - pairing OpenClaw;
 - списки разрешённых пользователей и политики доступа к личным сообщениям;
 - восстановление polling после временных ошибок сети.
@@ -21,11 +23,22 @@
 
 ## Установка
 
-### Из npm
+Для версии плагина `26.1.6` и новее требуется **OpenClaw `2026.11.7` или новее**.
+Изменения по версиям описаны в [CHANGELOG.md](https://github.com/potapovjakov/openclaw-vkteams-plugin/blob/main/CHANGELOG.md).
+
+### Из ClawHub
 
 ```bash
 openclaw onboard --install-daemon
-openclaw plugins install openclaw-vkteams-plugin
+openclaw plugins install clawhub:openclaw-vkteams-plugin
+```
+
+### Из npm
+
+Этот вариант доступен после первой публикации пакета в npm. До неё используйте ClawHub.
+
+```bash
+openclaw plugins install npm:openclaw-vkteams-plugin
 ```
 
 ### Из локального checkout
