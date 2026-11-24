@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/ci.yml)
 [![Publish to ClawHub](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/clawhub-publish.yml/badge.svg?event=push)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/clawhub-publish.yml)
+[![Publish to npm](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml/badge.svg?event=push)](https://github.com/potapovjakov/openclaw-vkteams-plugin/actions/workflows/npm-publish.yml)
 
 Плагин канала VK Teams для OpenClaw. Использует VK Teams Bot API и long polling.
 
