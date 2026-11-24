@@ -1,7 +1,7 @@
 import { createChannelPairingController } from "openclaw/plugin-sdk/channel-pairing";
 import { dispatchInboundDirectDm, resolveInboundDirectDmAccessWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
-import { saveMediaSource } from "openclaw/plugin-sdk/media-store";
-import { getVkTeamsEvents, getVkTeamsFileInfo, getVkTeamsSelf } from "./api.js";
+import { getVkTeamsEvents, getVkTeamsSelf } from "./api.js";
+import { getVkTeamsAttachments, loadVkTeamsAttachments } from "./inbound-attachments.js";
 import { sendVkTeamsText } from "./send.js";
 import { withVkTeamsTyping } from "./typing.js";
 const allowed = (id, list = []) => list.some((x) => x.trim() === "*" || x.trim().replace(/^vkteams:/i, "") === id);
@@ -23,15 +23,15 @@ export async function monitorVkTeamsProvider(p) {
                 const senderId = x?.from?.userId?.trim();
                 const chatId = x?.chat?.chatId?.trim() || senderId;
                 const text = x?.text ?? "";
-                const imageParts = (x?.parts ?? []).filter((part) => part.type === "file" && part.payload?.type === "image" && part.payload.fileId);
-                if (!senderId || !chatId || (!text && imageParts.length === 0))
+                const attachments = getVkTeamsAttachments(x?.parts);
+                if (!senderId || !chatId || (!text && attachments.length === 0))
                     continue;
                 if (x?.chat?.type && x.chat.type !== "private") {
                     log?.debug?.(`[${account.accountId}] ignoring non-private message`);
                     continue;
                 }
                 statusSink({ lastInboundAt: Date.now(), lastError: null });
-                const access = await resolveInboundDirectDmAccessWithRuntime({ cfg: config, channel: "vkteams", accountId: account.accountId, dmPolicy: account.config.dmPolicy ?? "pairing", allowFrom: account.config.allowFrom, senderId, rawBody: text || "[Изображение]", isSenderAllowed: allowed, runtime: { shouldComputeCommandAuthorized: runtime.channel.commands.shouldComputeCommandAuthorized, resolveCommandAuthorizedFromAuthorizers: runtime.channel.commands.resolveCommandAuthorizedFromAuthorizers }, modeWhenAccessGroupsOff: "configured" });
+                const access = await resolveInboundDirectDmAccessWithRuntime({ cfg: config, channel: "vkteams", accountId: account.accountId, dmPolicy: account.config.dmPolicy ?? "pairing", allowFrom: account.config.allowFrom, senderId, rawBody: text || attachments[0]?.label || "", isSenderAllowed: allowed, runtime: { shouldComputeCommandAuthorized: runtime.channel.commands.shouldComputeCommandAuthorized, resolveCommandAuthorizedFromAuthorizers: runtime.channel.commands.resolveCommandAuthorizedFromAuthorizers }, modeWhenAccessGroupsOff: "configured" });
                 if (access.access.decision === "pairing") {
                     await pairing.issueChallenge({ senderId, senderIdLine: `Your VK Teams user id: ${senderId}`, sendPairingReply: async (reply) => { const sent = await sendVkTeamsText(chatId, reply, { token, cfg: config, accountId: account.accountId }); if (!sent.ok)
                             throw new Error(sent.error); statusSink({ lastOutboundAt: Date.now() }); }, onCreated: () => log?.debug?.(`[${account.accountId}] pairing request sender=${senderId}`), onReplyError: (e) => log?.warn?.(`[${account.accountId}] pairing reply failed: ${String(e)}`) });
@@ -39,27 +39,11 @@ export async function monitorVkTeamsProvider(p) {
                 }
                 if (access.access.decision !== "allow")
                     continue;
-                const mediaPaths = [];
-                const mediaTypes = [];
-                const mediaUrls = [];
-                for (const part of imageParts) {
-                    try {
-                        const info = await getVkTeamsFileInfo({ apiBaseUrl, token, fileId: part.payload.fileId, signal: abortSignal });
-                        if (!info.url) {
-                            log?.warn?.(`[${account.accountId}] image file ${part.payload.fileId} has no download URL`);
-                            continue;
-                        }
-                        const saved = await saveMediaSource(info.url, undefined, undefined, undefined);
-                        mediaPaths.push(saved.path);
-                        mediaTypes.push(info.type === "image" ? "image/*" : "application/octet-stream");
-                        mediaUrls.push(info.url);
-                    }
-                    catch (error) {
-                        log?.warn?.(`[${account.accountId}] failed to download VK Teams image: ${error instanceof Error ? error.message : String(error)}`);
-                    }
-                }
-                const rawBody = text || (mediaPaths.length > 0 ? "[Изображение]" : "");
-                if (!rawBody && mediaPaths.length === 0)
+                const { body: rawBody, context } = await loadVkTeamsAttachments({
+                    attachments, text, apiBaseUrl, token, signal: abortSignal,
+                    onSkip: (reason) => log?.warn?.(`[${account.accountId}] VK Teams attachment skipped: ${reason}`),
+                });
+                if (abortSignal.aborted || !rawBody)
                     continue;
                 await withVkTeamsTyping({ apiBaseUrl, token, chatId, signal: abortSignal, onError: () => log?.debug?.(`[${account.accountId}] typing indicator update failed`) }, async () => await dispatchInboundDirectDm({
                     cfg: config,
@@ -76,7 +60,7 @@ export async function monitorVkTeamsProvider(p) {
                     messageId: x?.msgId || String(event.eventId),
                     timestamp: x?.timestamp ? x.timestamp * 1000 : Date.now(),
                     commandAuthorized: access.commandAuthorized,
-                    extraContext: mediaPaths.length > 0 ? { MediaPaths: mediaPaths, MediaTypes: mediaTypes, MediaUrls: mediaUrls } : undefined,
+                    extraContext: context,
                     deliver: async (reply) => {
                         const out = reply && typeof reply === "object" && "text" in reply ? String(reply.text ?? "") : "";
                         if (!out.trim())
